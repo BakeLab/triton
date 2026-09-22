@@ -567,14 +567,24 @@ std::pair<py::object, py::object> specialize_arg(PyObject *backend,
                                     align);
   }
 
-  if (PyObject_IsInstance(arg, nvidia_tensor_descriptor_cls)) {
-    return handle_gluon_tensor_descriptor(backend, arg, is_const,
-                                          specialize_value, align);
+  if (nvidia_tensor_descriptor_cls) {
+    int is_instance = PyObject_IsInstance(arg, nvidia_tensor_descriptor_cls);
+    if (is_instance < 0)
+      return {};
+    if (is_instance == 1) {
+      return handle_gluon_tensor_descriptor(backend, arg, is_const,
+                                            specialize_value, align);
+    }
   }
 
-  if (PyObject_IsInstance(arg, amd_tensor_descriptor_cls)) {
-    return handle_gluon_tensor_descriptor(backend, arg, is_const,
-                                          specialize_value, align);
+  if (amd_tensor_descriptor_cls) {
+    int is_instance = PyObject_IsInstance(arg, amd_tensor_descriptor_cls);
+    if (is_instance < 0)
+      return {};
+    if (is_instance == 1) {
+      return handle_gluon_tensor_descriptor(backend, arg, is_const,
+                                            specialize_value, align);
+    }
   }
 
   if (PyObject_IsInstance(arg, jit_callable_cls)) {
