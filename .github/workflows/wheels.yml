@@ -60,7 +60,7 @@ jobs:
 
       - uses: actions/setup-python@v7
         with:
-          python-version: '3.11'
+          python-version: '3.14'
 
       - name: Patch setup.py
         if: ${{ steps.check-version.outputs.new_commit == 'true' }}
@@ -82,10 +82,6 @@ jobs:
                   TRITON_EXT_ENABLED=ON \
                   TRITON_BUILD_WITH_CLANG_LLD=1"
 
-          # required to build Python 3.14 with cibuildwheel 2.23.3
-          # todo: Need to update system Python to 3.11 and update cibuildwheel to latest
-
-
           # many_linux_2_28 image comes with GCC 12.2.1, but not clang.
           # With this install, it gets clang 16.0.6.
           export CIBW_BEFORE_ALL="dnf install clang lld -y"
@@ -102,13 +98,8 @@ jobs:
             export CIBW_MANYLINUX_AARCH64_IMAGE="quay.io/pypa/manylinux_2_28_${{ matrix.config.arch }}:latest"
           fi
 
-          # Version-specific wheels for Python 3.10 and 3.11.
-          export CIBW_BUILD="cp3{10,11}-manylinux_${{ matrix.config.arch }}"
-          export CIBW_SKIP="cp{35,36,37,38,39}-*"
-          python3 -m cibuildwheel . --output-dir wheelhouse
-
-          # A single abi3 wheel built on Python 3.12 supports Python 3.12+.
-          export CIBW_BUILD="cp312-manylinux_${{ matrix.config.arch }}"
+          # The trimmed branch supports Python 3.14 only.
+          export CIBW_BUILD="cp314-manylinux_${{ matrix.config.arch }}"
           export CIBW_ENVIRONMENT="MAX_JOBS=4 TRITON_EXT_ENABLED=ON TRITON_BUILD_WITH_CLANG_LLD=1 TRITON_STABLE_ABI=ON"
           python3 -m cibuildwheel . --output-dir wheelhouse
 
