@@ -1,17 +1,13 @@
 import importlib
 import os
 import inspect
-import sys
 from dataclasses import dataclass
 from typing import Type, TypeVar, Union
 from types import ModuleType
 from .driver import DriverBase
 from .compiler import BaseBackend
 
-if sys.version_info >= (3, 10):
-    from importlib.metadata import entry_points
-else:
-    from importlib_metadata import entry_points
+from importlib.metadata import entry_points
 
 T = TypeVar("T", bound=Union[BaseBackend, DriverBase])
 

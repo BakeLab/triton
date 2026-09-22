@@ -263,11 +263,7 @@ def _extract_archive(archive_path, download_dir):
             file.extractall(path=download_dir)
         else:
             file = stack.enter_context(tarfile.open(archive_path, mode="r:*"))
-            # Use extractall without filter for Python version < 3.12 compatibility
-            if hasattr(tarfile, "data_filter"):
-                file.extractall(path=download_dir, filter="data")
-            else:
-                file.extractall(path=download_dir)
+            file.extractall(path=download_dir, filter="data")
 
 
 def _validate_sha256(archive_path, url, expected_sha256):
