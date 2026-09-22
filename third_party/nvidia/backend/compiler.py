@@ -19,6 +19,9 @@ from pathlib import Path
 
 instrument = functools.partial(_instrument, backend="nvidia")
 
+# The trimmed NVIDIA backend targets Blackwell and newer GPUs only.
+MIN_CUDA_ARCH = 100
+
 
 def min_dot_size(target: GPUTarget):
 
@@ -188,7 +191,12 @@ class CUDABackend(BaseBackend):
 
     @staticmethod
     def supports_target(target: GPUTarget):
-        return target.backend == 'cuda'
+        if target.backend != 'cuda':
+            return False
+        try:
+            return int(target.arch) >= MIN_CUDA_ARCH
+        except (TypeError, ValueError):
+            return False
 
     def _parse_arch(self, arch):
         pattern = r"^sm(\d+)$"
@@ -208,6 +216,8 @@ class CUDABackend(BaseBackend):
                 arch = int(arch)
             except ValueError:
                 raise ValueError(f"CUDA backend expects a numeric arch, got '{target.arch}'")
+        if arch < MIN_CUDA_ARCH:
+            raise ValueError(f"This Triton CUDA build supports SM{MIN_CUDA_ARCH}+ only; current target is SM{arch}")
 
         warp_size = target.warp_size
         if not isinstance(warp_size, int):
@@ -238,13 +248,8 @@ class CUDABackend(BaseBackend):
             args["max_occupancy"] = 1
         capability = int(self._parse_arch(args["arch"]))
 
-        if args.get("clc", False) and capability < 100:
-            raise ValueError(f"clc=True requires NVIDIA SM100+ (Blackwell); current target is sm_{capability}")
-
-        if args.get("num_ctas", 1) > 1 and capability < 90:
-            raise ValueError((f"num_ctas > 1 requires NVIDIA SM90+ (Hopper). "
-                              f"Current target is sm_{capability}. This configuration will fail. "
-                              f"Please set num_ctas=1 or target an SM90+ GPU."))
+        if capability < MIN_CUDA_ARCH:
+            raise ValueError(f"This Triton CUDA build supports SM{MIN_CUDA_ARCH}+ only; current target is SM{capability}")
 
         if "supported_fp8_dtypes" not in args:
             supported_fp8_dtypes = set(CUDAOptions.supported_fp8_dtypes)
