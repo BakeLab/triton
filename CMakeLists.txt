@@ -31,6 +31,15 @@ option(TRITON_BUILD_WITH_CCACHE "Build with ccache (if available)" ON)
 option(TRITON_OFFLINE_BUILD "Build without downloading dependencies" OFF)
 option(TRITON_EXT_ENABLED "Build with default visibility for Triton+LLVM symbol exposure to plugin extensions" OFF)
 set(TRITON_CODEGEN_BACKENDS "" CACHE STRING "Enable different codegen backends")
+foreach(TRITON_BACKEND_NAME IN ITEMS amd nvidia intel)
+  list(FIND TRITON_CODEGEN_BACKENDS "${TRITON_BACKEND_NAME}" TRITON_BACKEND_INDEX)
+  string(TOUPPER "${TRITON_BACKEND_NAME}" TRITON_BACKEND_UPPER)
+  if(TRITON_BACKEND_INDEX GREATER -1)
+    add_compile_definitions(TRITON_HAS_${TRITON_BACKEND_UPPER}_BACKEND=1)
+  else()
+    add_compile_definitions(TRITON_HAS_${TRITON_BACKEND_UPPER}_BACKEND=0)
+  endif()
+endforeach()
 set(TRITON_VERSION "" CACHE STRING "Triton version string (passed from setup.py)")
 
 set(TRITON_CACHE_PATH "" CACHE PATH "Path to triton cache")
@@ -357,6 +366,18 @@ if(TRITON_BUILD_PYTHON_MODULE)
     add_subdirectory(third_party/${CODEGEN_BACKEND})
   endforeach()
 
+  # Common TritonGPU transforms still use both vendor dialect libraries. Keep
+  # those compile-time libraries available, while only selected backends
+  # create Python plugins and backend runtime modules.
+  list(FIND TRITON_CODEGEN_BACKENDS "nvidia" TRITON_NVIDIA_BACKEND_INDEX)
+  if(TRITON_NVIDIA_BACKEND_INDEX EQUAL -1)
+    add_subdirectory(third_party/nvidia)
+  endif()
+  list(FIND TRITON_CODEGEN_BACKENDS "amd" TRITON_AMD_BACKEND_INDEX)
+  if(TRITON_AMD_BACKEND_INDEX EQUAL -1)
+    add_subdirectory(third_party/amd)
+  endif()
+
   if (TRITON_BUILD_PROTON)
     add_subdirectory(third_party/proton)
   endif()
@@ -538,10 +559,9 @@ endif()
 find_package(Threads REQUIRED)
 
 add_subdirectory(third_party/f2reduce)
-add_subdirectory(bin)
-add_subdirectory(test)
-
 if(TRITON_BUILD_UT)
+  add_subdirectory(bin)
+  add_subdirectory(test)
   add_subdirectory(unittest)
   # This target runs all the unit tests.
   add_custom_target(check-triton-unit-tests
