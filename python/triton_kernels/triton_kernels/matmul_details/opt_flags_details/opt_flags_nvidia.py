@@ -66,6 +66,11 @@ def compute_block_n(n: int, arch, precision_config):
         return block_n, block_n
     if precision_config.max_num_imprecise_acc is None and n > 128:
         block_n, block_n_tma = 256, 256
+        # The 256-column MXFP4 tile can exceed the per-block shared-memory
+        # limit on SM120-class cards (101376 bytes even with opt-in).  Match
+        # the upstream tuning fix and use a 128-column tile on those devices.
+        if torch.cuda.get_device_properties(0).shared_memory_per_block_optin < 131072:
+            block_n, block_n_tma = 128, 128
     else:
         target = min(128, triton.next_power_of_2(n))
         block_n, block_n_tma = max(8, target), max(16, target)
@@ -158,6 +163,11 @@ def compute_num_stages(
     swap_xw=None,
     w_transpose=False,
 ):
+    # SM120-class devices expose only 101376 bytes of opt-in shared memory;
+    # keep persistent pipelines to one stage so the legal tile configuration
+    # cannot exceed the per-block limit.
+    if is_persistent and torch.cuda.get_device_properties(0).shared_memory_per_block_optin < 131072:
+        return 1
     if precision_config.max_num_imprecise_acc is not None:
         return 3
     if swap_xw is None:
