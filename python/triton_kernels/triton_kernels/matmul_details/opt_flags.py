@@ -327,6 +327,15 @@ def make_default_opt_flags_nvidia(
             # TODO: persistent kernel is currently slower than non-persistent
             is_persistent = False
 
+    # SM120-class cards cannot fit the persistent MXFP4 tile/epilogue within
+    # their 101376-byte per-block shared-memory limit.  Use the regular kernel
+    # path, which has a smaller live shared-memory footprint, instead of
+    # emitting a launch that will fail during handle initialization.
+    if is_persistent and torch.cuda.get_device_properties(0).shared_memory_per_block_optin < 131072:
+        if constraints.get("is_persistent") is True:
+            raise InapplicableConstraint("persistent matmul exceeds the device shared-memory limit")
+        is_persistent = False
+
     # adjust block_n based on is_persistent signal
     block_n = block_n_tma if is_persistent else block_n
     if (is_persistent and constraints.get("block_n", None) is None
@@ -460,6 +469,16 @@ def make_default_opt_flags_nvidia(
         )
     ):
         num_stages = 3 if epilogue_reduction_n == 1 else 2
+    # SM120-class devices expose only 101376 bytes of opt-in shared memory.
+    # Persistent MXFP4 tiles can still exceed that limit after the 128-column
+    # tile fallback, so use a single pipeline stage unless the caller supplied
+    # an explicit stage constraint.
+    if (
+        "num_stages" not in constraints
+        and is_persistent
+        and torch.cuda.get_device_properties(0).shared_memory_per_block_optin < 131072
+    ):
+        num_stages = 1
     assert num_stages >= 1
     ret = OptFlags(
         block_m=block_m,
