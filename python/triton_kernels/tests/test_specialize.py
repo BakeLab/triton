@@ -111,7 +111,10 @@ def test_cacheable(device, fresh_triton_cache, monkeypatch):
     k = specialized_kernel[(1, )](o, )
     hash = k.hash
     assert o.item() == 1.0
-    assert module_name == "tests.test_specialize"
+    # The module can be imported as either ``tests.test_specialize`` from the
+    # test package or ``python.triton_kernels.tests.test_specialize`` when the
+    # repository is tested by an absolute path.
+    assert module_name.endswith("tests.test_specialize")
     assert fn_name == "cacheable_kernel"
 
     # check line info in ttir
