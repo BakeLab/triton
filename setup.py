@@ -492,7 +492,7 @@ class plugin_bdist_wheel(bdist_wheel):
 
     def get_tag(self):
         if check_env_flag("TRITON_STABLE_ABI"):
-            return "cp312", "abi3", super().get_tag()[2]
+            return "cp314", "abi3", super().get_tag()[2]
         return super().get_tag()
 
     def run(self):
@@ -589,8 +589,8 @@ def get_triton_version_suffix():
 TRITON_VERSION = "3.9.0" + get_triton_version_suffix()
 
 # Dynamically define supported Python versions and classifiers
-MIN_PYTHON = (3, 11)
-MAX_PYTHON = (3, 15)
+MIN_PYTHON = (3, 14)
+MAX_PYTHON = (3, 14)
 
 PYTHON_REQUIRES = f">={MIN_PYTHON[0]}.{MIN_PYTHON[1]},<{MAX_PYTHON[0]}.{MAX_PYTHON[1] + 1}"
 BASE_CLASSIFIERS = [
@@ -610,7 +610,6 @@ setup(
     long_description="",
     license="MIT",
     install_requires=[
-        "importlib-metadata; python_version < '3.10'",
     ],
     packages=list(get_packages()),
     package_dir=dict(get_package_dirs()),
