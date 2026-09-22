@@ -290,9 +290,17 @@ class HIPOptions:
 class HIPBackend(BaseBackend):
     supports_native_tensor_specialization = False
 
+    # Keep only AMD GPU generations shipping from 2025 onward: CDNA4
+    # (gfx950) and RDNA4/CDNA5 (gfx12*).
+    SUPPORTED_ARCH_PREFIXES = ("gfx950", "gfx12")
+
+    @classmethod
+    def _supports_arch(cls, arch: object) -> bool:
+        return isinstance(arch, str) and arch.startswith(cls.SUPPORTED_ARCH_PREFIXES)
+
     @staticmethod
     def supports_target(target: GPUTarget):
-        return target.backend == 'hip'
+        return target.backend == 'hip' and HIPBackend._supports_arch(target.arch)
 
     def __init__(self, target: GPUTarget) -> None:
         if not isinstance(target.warp_size, int):
@@ -304,6 +312,11 @@ class HIPBackend(BaseBackend):
 
         super().__init__(target)
         assert isinstance(target.arch, str)
+        if not self._supports_arch(target.arch):
+            raise ValueError(
+                "This Triton AMD backend supports gfx950 and gfx12* (2025+ GPUs) only; "
+                f"current target is {target.arch}"
+            )
         self.binary_ext = "hsaco"
 
     def get_target_name(self, options) -> str:
@@ -316,6 +329,11 @@ class HIPBackend(BaseBackend):
             opts["sanitize_overflow"] = False
 
         args = {'arch': knobs.runtime.override_arch or self.target.arch}
+        if not self._supports_arch(args["arch"]):
+            raise ValueError(
+                "This Triton AMD backend supports gfx950 and gfx12* (2025+ GPUs) only; "
+                f"current target is {args['arch']}"
+            )
 
         if opts.get("num_ctas", 1) > 1 and not amd.supports_multi_cta_launch(self.target.arch):
             raise ValueError(f"num_ctas > 1 not supported on {self.target.arch}")
