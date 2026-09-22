@@ -161,6 +161,11 @@ def gluon_tensordescriptors_to_specialize():
     ]
 
 
+def test_specialize_unknown_object_without_optional_backend_types():
+    with pytest.raises(TypeError, match="failed to specialize argument"):
+        native_specialize_impl(CUDABackend, object(), False, True, True)
+
+
 def test_specialize_gluon_fp4_descriptor_without_active_target(monkeypatch):
     monkeypatch.setattr(target_info, "current_target", lambda: None)
     tensor = torch.empty((128, 128), dtype=torch.uint8)
