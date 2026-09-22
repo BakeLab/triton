@@ -1,4 +1,3 @@
-from __future__ import annotations  # remove after python 3.11
 import builtins
 import warnings
 
