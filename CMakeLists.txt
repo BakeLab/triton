@@ -9,8 +9,14 @@ endif()
 project(triton CXX C)
 include(CTest)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 26)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  # LLVM's generated MLIR interfaces trigger this diagnostic under C++26;
+  # keep Triton's Werror policy without treating that compatibility warning as
+  # a hard error.
+  add_compile_options(-Wno-error=ambiguous-reversed-operator)
+endif()
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 

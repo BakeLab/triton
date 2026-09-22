@@ -217,7 +217,7 @@ Value BufferEmitter::emitAtomicRMW(RMWOp rmwType, Type type, Value rsrcDesc,
     // .{s,u,f}{max,min}. RMWOp::UMAX and RMWOp::UMIN already stringify to
     // "umax" / "umin" and need no override.
     StringRef prefix = isa<FloatType>(getElementTypeOrSelf(type)) ? "f" : "s";
-    rmwOpStr = (prefix + rmwOpStr).str();
+    rmwOpStr = prefix.str() + rmwOpStr;
   }
   auto intrinsic = "llvm.amdgcn.raw.ptr.buffer.atomic." + rmwOpStr;
   SmallVector<Value, 6> intrinsicArgs = args;
