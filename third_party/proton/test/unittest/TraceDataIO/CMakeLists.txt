@@ -9,7 +9,11 @@ add_triton_ut(
 
 target_include_directories(TraceDataIO
 PRIVATE
-    "${JSON_INCLUDE_DIR}"
-	"${PROTON_COMMON_DIR}/include"
+    "${PROTON_COMMON_DIR}/include"
     "${PROTON_SRC_DIR}/include"
+)
+# Vendored nlohmann/json is not warning-clean under newer toolchains; treat it
+# as a system include.
+target_include_directories(TraceDataIO SYSTEM PRIVATE
+    "${JSON_INCLUDE_DIR}"
 )

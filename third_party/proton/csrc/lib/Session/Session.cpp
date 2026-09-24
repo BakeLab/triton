@@ -4,11 +4,15 @@
 #include "Context/Shadow.h"
 #include "Data/TraceData.h"
 #include "Data/TreeData.h"
-#include "Profiler/Cupti/CuptiProfiler.h"
 #include "Profiler/Instrumentation/InstrumentationProfiler.h"
 #include "Profiler/Profiler.h"
+#if PROTON_HAS_NVIDIA_BACKEND
+#include "Profiler/Cupti/CuptiProfiler.h"
+#endif
+#if PROTON_HAS_AMD_BACKEND
 #include "Profiler/RocprofSDK/RocprofSDKProfiler.h"
 #include "Profiler/Roctracer/RoctracerProfiler.h"
+#endif
 #include "Utility/Errors.h"
 #include "Utility/String.h"
 #include <algorithm>

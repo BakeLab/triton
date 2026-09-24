@@ -4,8 +4,12 @@
 #include "Runtime/Runtime.h"
 #include "TraceDataIO/CircularLayoutParser.h"
 
+#if PROTON_HAS_NVIDIA_BACKEND
 #include "Runtime/CudaRuntime.h"
+#endif
+#if PROTON_HAS_AMD_BACKEND
 #include "Runtime/HipRuntime.h"
+#endif
 #include "Utility/Errors.h"
 #include "Utility/Numeric.h"
 #include "Utility/String.h"
