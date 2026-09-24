@@ -366,17 +366,12 @@ if(TRITON_BUILD_PYTHON_MODULE)
     add_subdirectory(third_party/${CODEGEN_BACKEND})
   endforeach()
 
-  # Common TritonGPU transforms still use both vendor dialect libraries. Keep
-  # those compile-time libraries available, while only selected backends
-  # create Python plugins and backend runtime modules.
+  # Vendor dialect libraries are only built for the selected backends: gluon's
+  # AMD bindings and the warp-specialization NVIDIA passes are compiled out
+  # via the TRITON_HAS_*_BACKEND macros, so no shared object references vendor
+  # symbols from an unselected backend.
   list(FIND TRITON_CODEGEN_BACKENDS "nvidia" TRITON_NVIDIA_BACKEND_INDEX)
-  if(TRITON_NVIDIA_BACKEND_INDEX EQUAL -1)
-    add_subdirectory(third_party/nvidia)
-  endif()
   list(FIND TRITON_CODEGEN_BACKENDS "amd" TRITON_AMD_BACKEND_INDEX)
-  if(TRITON_AMD_BACKEND_INDEX EQUAL -1)
-    add_subdirectory(third_party/amd)
-  endif()
 
   if (TRITON_BUILD_PROTON)
     add_subdirectory(third_party/proton)
@@ -404,6 +399,26 @@ if(TRITON_BUILD_PYTHON_MODULE)
 
   get_property(triton_libs GLOBAL PROPERTY TRITON_LIBS)
   get_property(triton_plugins GLOBAL PROPERTY TRITON_PLUGINS)
+  # Vendor-flavored MLIR/LLVM libraries are only linked when the
+  # corresponding backend is selected (IR translation, GPU transforms, codegen
+  # and asm parsers).
+  set(triton_vendor_libs "")
+  if(NOT TRITON_NVIDIA_BACKEND_INDEX EQUAL -1)
+    list(APPEND triton_vendor_libs
+      MLIRNVVMDialect
+      MLIRNVVMToLLVMIRTranslation
+      MLIRGPUToNVVMTransforms
+      LLVMNVPTXCodeGen
+    )
+  endif()
+  if(NOT TRITON_AMD_BACKEND_INDEX EQUAL -1)
+    list(APPEND triton_vendor_libs
+      MLIRROCDLToLLVMIRTranslation
+      MLIRGPUToROCDLTransforms
+      LLVMAMDGPUCodeGen
+      LLVMAMDGPUAsmParser
+    )
+  endif()
   set(TRITON_LIBRARIES
     ${triton_libs}
     ${triton_plugins}
@@ -417,6 +432,9 @@ if(TRITON_BUILD_PYTHON_MODULE)
     MLIRPass
     MLIRTransforms
     MLIRLLVMDialect
+    # The ROCDL dialect itself is vendor-neutral here: gluon's warp pipeline
+    # border marker emits ROCDL::SchedBarrier ops on all backends.
+    MLIRROCDLDialect
     MLIRSupport
     MLIRTargetLLVMIRExport
     MLIRMathToLLVM
@@ -433,6 +451,7 @@ if(TRITON_BUILD_PYTHON_MODULE)
     LLVMNVPTXCodeGen
     LLVMAMDGPUCodeGen
     LLVMAMDGPUAsmParser
+    LLVMPlugins
 
     Python3::Module
     nanobind-static

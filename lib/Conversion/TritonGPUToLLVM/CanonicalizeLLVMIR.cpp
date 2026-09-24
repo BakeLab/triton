@@ -4,7 +4,9 @@
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
+#if TRITON_HAS_NVIDIA_BACKEND
 #include "third_party/nvidia/include/Dialect/NVGPU/IR/Dialect.h"
+#endif
 #include "triton/Dialect/TritonGPU/IR/Dialect.h"
 #include "llvm/Support/MathExtras.h"
 
@@ -50,6 +52,7 @@ class SelectConstantConditionPattern : public OpRewritePattern<LLVM::SelectOp> {
   }
 };
 
+#if TRITON_HAS_NVIDIA_BACKEND
 class ElideFullClusterRankMaskPattern : public OpRewritePattern<LLVM::AndOp> {
   using OpRewritePattern::OpRewritePattern;
 
@@ -74,6 +77,7 @@ class ElideFullClusterRankMaskPattern : public OpRewritePattern<LLVM::AndOp> {
     return success();
   }
 };
+#endif
 } // namespace
 
 namespace {
@@ -84,7 +88,10 @@ struct CanonicalizeLLVMIR
     LLVM::LLVMFuncOp func = getOperation();
     RewritePatternSet patterns(&getContext());
     patterns.add<SelectConstantConditionPattern,
-                 ElideFullClusterRankMaskPattern, FoldAbsIntoReduxPattern>(
+#if TRITON_HAS_NVIDIA_BACKEND
+                 ElideFullClusterRankMaskPattern,
+#endif
+                 FoldAbsIntoReduxPattern>(
         &getContext());
 
     getContext()
