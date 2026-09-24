@@ -668,6 +668,7 @@ setup(
     long_description="",
     license="MIT",
     install_requires=[
+        "torch==2.15.0.dev20260922+cuda.13.4.sm120.znver4.g13c687ff",
     ],
     packages=list(get_packages()),
     package_dir=dict(get_package_dirs()),
