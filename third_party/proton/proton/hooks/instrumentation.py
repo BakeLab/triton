@@ -3,8 +3,18 @@ from typing import Dict, Optional, Union, Any
 import triton
 from triton._C.libtriton import ir as triton_ir
 from triton._C.libtriton import proton as triton_proton
-from triton._C.libtriton import amd as triton_amd
-from triton._C.libtriton import nvidia as triton_nvidia
+from triton._C.libtriton import passes as triton_passes
+
+# Vendor dialect modules are omitted from backend-specific builds; the hooks
+# dispatch on the active backend at runtime, so a missing one is never used.
+try:
+    from triton._C.libtriton import amd as triton_amd
+except ImportError:
+    triton_amd = None
+try:
+    from triton._C.libtriton import nvidia as triton_nvidia
+except ImportError:
+    triton_nvidia = None
 from triton._C.libtriton import passes as triton_passes
 from triton._C.libproton import proton as libproton
 from triton.compiler import LazyDict

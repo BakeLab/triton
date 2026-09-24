@@ -140,7 +140,15 @@ from ._standard import (
     zeros_like,
 )
 
-from . import nvidia
-from . import amd
+try:
+    from . import nvidia
+except ImportError:
+    # NVIDIA-specific gluon modules are omitted from backend-specific wheels.
+    pass
+try:
+    from . import amd
+except ImportError:
+    # AMD-specific gluon modules are omitted from backend-specific wheels.
+    pass
 from . import extra
 from . import fpsan
