@@ -1,13 +1,21 @@
 #pragma once
+#if TRITON_HAS_AMD_BACKEND
 #include "amd/include/Dialect/TritonAMDGPU/IR/Dialect.h"
 #include "amd/include/TritonAMDGPUTransforms/Passes.h"
 #include "amd/lib/TritonAMDGPUToLLVM/TargetInfo.h"
+#endif
+#if TRITON_HAS_NVIDIA_BACKEND
 #include "nvidia/include/Dialect/NVGPU/IR/Dialect.h"
 #include "nvidia/include/Dialect/NVWS/IR/Dialect.h"
 #include "nvidia/lib/TritonNVIDIAGPUToLLVM/TargetInfo.h"
+#endif
 #include "proton/Dialect/include/Conversion/ProtonGPUToLLVM/Passes.h"
+#if TRITON_HAS_AMD_BACKEND
 #include "proton/Dialect/include/Conversion/ProtonGPUToLLVM/ProtonAMDGPUToLLVM/Passes.h"
+#endif
+#if TRITON_HAS_NVIDIA_BACKEND
 #include "proton/Dialect/include/Conversion/ProtonGPUToLLVM/ProtonNvidiaGPUToLLVM/Passes.h"
+#endif
 #include "proton/Dialect/include/Conversion/ProtonToProtonGPU/Passes.h"
 #include "proton/Dialect/include/Dialect/Proton/IR/Dialect.h"
 #include "proton/Dialect/include/Dialect/ProtonGPU/IR/Dialect.h"
@@ -19,18 +27,22 @@
 #include "triton/Dialect/TritonNvidiaGPU/IR/Dialect.h"
 
 // Below headers will allow registration to ROCm passes
+#if TRITON_HAS_AMD_BACKEND
 #include "TritonAMDGPUToLLVM/Passes.h"
 #include "TritonAMDGPUTransforms/Passes.h"
+#endif
 
 #include "triton/Dialect/Triton/Transforms/Passes.h"
 #include "triton/Dialect/TritonGPU/Transforms/Passes.h"
 #include "triton/Dialect/TritonInstrument/Transforms/Passes.h"
 #include "triton/Dialect/TritonNvidiaGPU/Transforms/Passes.h"
 
+#if TRITON_HAS_NVIDIA_BACKEND
 #include "nvidia/hopper/include/Transforms/Passes.h"
 #include "nvidia/include/Dialect/NVWS/Transforms/Passes.h"
 #include "nvidia/include/NVGPUToLLVM/Passes.h"
 #include "nvidia/include/TritonNVIDIAGPUToLLVM/Passes.h"
+#endif
 #include "triton/Conversion/TritonGPUToLLVM/Passes.h"
 #include "triton/Conversion/TritonToTritonGPU/Passes.h"
 #include "triton/Target/LLVMIR/Passes.h"
@@ -53,13 +65,17 @@ namespace mlir {
 namespace test {
 void registerTestAliasPass();
 void registerTestAlignmentPass();
-void registerAMDTestAlignmentPass();
 void registerTestAllocationPass();
 void registerTestBufferRegionPass();
+void registerTestLoopPeelingPass();
+#if TRITON_HAS_NVIDIA_BACKEND
 void registerTestMembarPass();
+#endif
+#if TRITON_HAS_AMD_BACKEND
+void registerAMDTestAlignmentPass();
 void registerTestAMDGPUMembarPass();
 void registerTestTritonAMDGPURangeAnalysis();
-void registerTestLoopPeelingPass();
+#endif
 namespace proton {
 void registerTestScopeIdAllocationPass();
 } // namespace proton
@@ -67,8 +83,12 @@ void registerTestScopeIdAllocationPass();
 } // namespace mlir
 
 inline void registerTritonDialects(mlir::DialectRegistry &registry) {
+#if TRITON_HAS_NVIDIA_BACKEND
   mlir::triton::NVIDIA::registerTargetInfo();
+#endif
+#if TRITON_HAS_AMD_BACKEND
   mlir::triton::AMD::registerTargetInfo();
+#endif
   mlir::registerAllPasses();
   mlir::triton::registerTritonPasses();
   mlir::triton::gpu::registerTritonGPUPasses();
@@ -78,13 +98,17 @@ inline void registerTritonDialects(mlir::DialectRegistry &registry) {
   mlir::triton::gluon::registerGluonPasses();
   mlir::test::registerTestAliasPass();
   mlir::test::registerTestAlignmentPass();
-  mlir::test::registerAMDTestAlignmentPass();
   mlir::test::registerTestAllocationPass();
   mlir::test::registerTestBufferRegionPass();
+#if TRITON_HAS_NVIDIA_BACKEND
   mlir::test::registerTestMembarPass();
+#endif
   mlir::test::registerTestLoopPeelingPass();
+#if TRITON_HAS_AMD_BACKEND
+  mlir::test::registerAMDTestAlignmentPass();
   mlir::test::registerTestAMDGPUMembarPass();
   mlir::test::registerTestTritonAMDGPURangeAnalysis();
+#endif
   mlir::triton::registerConvertTritonToTritonGPUPass();
   mlir::triton::registerRelayoutTritonGPUPass();
   mlir::triton::gpu::registerAllocateSharedMemoryPass();
@@ -95,12 +119,15 @@ inline void registerTritonDialects(mlir::DialectRegistry &registry) {
   mlir::triton::registerInitializeWSClusterBarriers();
   mlir::triton::registerTritonNvidiaGPUMembar();
   mlir::triton::registerConvertTritonGPUToLLVMPass();
+#if TRITON_HAS_NVIDIA_BACKEND
   mlir::triton::registerConvertNVGPUToLLVMPass();
   mlir::triton::registerAllocateSharedMemoryNvPass();
+#endif
   mlir::registerLLVMDIScope();
   mlir::LLVM::registerInlinerInterface(registry);
   mlir::registerLLVMDILocalVariable();
 
+#if TRITON_HAS_AMD_BACKEND
   // TritonAMDGPUToLLVM passes
   mlir::triton::registerAllocateAMDGPUSharedMemory();
   mlir::triton::registerTritonAMDGPUMembar();
@@ -108,6 +135,7 @@ inline void registerTritonDialects(mlir::DialectRegistry &registry) {
   mlir::triton::registerConvertTritonAMDGPUToLLVM();
   mlir::triton::registerConvertBuiltinFuncToLLVM();
   mlir::triton::registerConvertWarpPipeline();
+#endif
 
   mlir::ub::registerConvertUBToLLVMInterface(registry);
   mlir::registerConvertNVVMToLLVMInterface(registry);
@@ -115,6 +143,7 @@ inline void registerTritonDialects(mlir::DialectRegistry &registry) {
   mlir::cf::registerConvertControlFlowToLLVMInterface(registry);
   mlir::arith::registerConvertArithToLLVMInterface(registry);
 
+#if TRITON_HAS_AMD_BACKEND
   // TritonAMDGPUTransforms passes
   mlir::registerTritonAMDGPUAccelerateMatmul();
   mlir::registerTritonAMDGPUOptimizeDescriptorEncoding();
@@ -138,21 +167,32 @@ inline void registerTritonDialects(mlir::DialectRegistry &registry) {
   mlir::registerTritonAMDGPUFpSanitizer();
   mlir::registerTritonAMDGPUOptimizeDotOperands();
   mlir::registerConSanAMDHooks();
+#endif
 
+#if TRITON_HAS_NVIDIA_BACKEND
   // NVWS passes
   mlir::triton::registerNVWSTransformsPasses();
 
   // NVGPU transform passes
   mlir::registerNVHopperTransformsPasses();
+#endif
 
   // Proton passes
   mlir::test::proton::registerTestScopeIdAllocationPass();
   mlir::triton::proton::registerConvertProtonToProtonGPU();
+#if TRITON_HAS_NVIDIA_BACKEND
   mlir::triton::proton::gpu::registerConvertProtonNvidiaGPUToLLVM();
+#endif
+#if TRITON_HAS_AMD_BACKEND
   mlir::triton::proton::gpu::registerConvertProtonAMDGPUToLLVM();
+#endif
   mlir::triton::proton::gpu::registerAllocateProtonSharedMemoryPass();
   mlir::triton::proton::gpu::registerScheduleBufferStorePass();
+#if TRITON_HAS_AMD_BACKEND
+  // The pass inserts ROCDL sched barriers and is implemented in the
+  // AMD-specific proton lowering library.
   mlir::triton::proton::gpu::registerAddSchedBarriersPass();
+#endif
 
   // Register plugin passes and dialects.
   for (const auto &plugin : mlir::triton::plugin::loadPlugins()) {
@@ -167,8 +207,9 @@ inline void registerTritonDialects(mlir::DialectRegistry &registry) {
       mlir::triton::instrument::TritonInstrumentDialect,
       mlir::math::MathDialect, mlir::arith::ArithDialect, mlir::scf::SCFDialect,
       mlir::gpu::GPUDialect, mlir::LLVM::LLVMDialect, mlir::NVVM::NVVMDialect,
+#if TRITON_HAS_NVIDIA_BACKEND
       mlir::triton::nvgpu::NVGPUDialect, mlir::triton::nvws::NVWSDialect,
-      mlir::triton::amdgpu::TritonAMDGPUDialect,
+#endif
       mlir::triton::proton::ProtonDialect,
       mlir::triton::proton::gpu::ProtonGPUDialect, mlir::ROCDL::ROCDLDialect,
       mlir::triton::gluon::GluonDialect>();
