@@ -23,6 +23,7 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/IR/Verifier.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/IRReader/IRReader.h"
 #include "llvm/Linker/Linker.h"
 #include "llvm/MC/TargetRegistry.h"
@@ -951,16 +952,37 @@ void init_triton_llvm(py::module_ &m) {
     std::call_once(init_flag, []() {
       // Initialize only the GPU targets Triton emits code for. Initializing all
       // targets would also require linking LLVM's host target libraries.
+#if TRITON_HAS_NVIDIA_BACKEND
       LLVMInitializeNVPTXTargetInfo();
       LLVMInitializeNVPTXTarget();
       LLVMInitializeNVPTXTargetMC();
       LLVMInitializeNVPTXAsmPrinter();
+#endif
 
+#if TRITON_HAS_AMD_BACKEND
       LLVMInitializeAMDGPUTargetInfo();
       LLVMInitializeAMDGPUTarget();
       LLVMInitializeAMDGPUTargetMC();
       LLVMInitializeAMDGPUAsmParser();
       LLVMInitializeAMDGPUAsmPrinter();
+#endif
+
+      // Register the legacy-PassManager passes used by the PTX/cubin
+      // pipelines (always-inliner, verifier, codegen emission).  Legacy
+      // passes only register when their initialize* function runs; without
+      // these calls registration relied on whichever vendor backend
+      // libraries happened to be linked.
+      auto &passRegistry = *llvm::PassRegistry::getPassRegistry();
+      llvm::initializeCore(passRegistry);
+      llvm::initializeScalarOpts(passRegistry);
+      llvm::initializeVectorization(passRegistry);
+      llvm::initializeIPO(passRegistry);
+      llvm::initializeAnalysis(passRegistry);
+      llvm::initializeTransformUtils(passRegistry);
+      llvm::initializeInstCombine(passRegistry);
+      llvm::initializeCodeGen(passRegistry);
+      llvm::initializeTarget(passRegistry);
+      llvm::initializeGlobalISel(passRegistry);
 
       // Installed exactly once, before any target compilation. The dispatcher
       // reads thread-local state and is safe for parallel codegen.

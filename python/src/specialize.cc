@@ -151,12 +151,16 @@ bool init_globals() noexcept try {
   jit_callable_cls = import_from("triton.runtime.jit", "JITCallable");
   tensor_descriptor_cls =
       import_from("triton.tools.tensor_descriptor", "TensorDescriptor");
+#if TRITON_HAS_NVIDIA_BACKEND
   nvidia_tensor_descriptor_cls = import_from(
       "triton.experimental.gluon.nvidia.hopper", "TensorDescriptor");
   nvidia_tensor_descriptor_im2col_cls = import_from(
       "triton.experimental.gluon.nvidia.hopper", "TensorDescriptorIm2Col");
+#endif
+#if TRITON_HAS_AMD_BACKEND
   amd_tensor_descriptor_cls =
       import_from("triton.experimental.gluon.amd.cdna5", "TensorDescriptor");
+#endif
 
   auto m_canonicalize = py::module_::import_("triton._utils");
   canonicalize_dtype_fn = import_from("triton._utils", "canonicalize_dtype");
