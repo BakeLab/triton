@@ -6,11 +6,30 @@ include(CheckCXXSourceCompiles)
 set(PROTON_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/csrc")
 set(PROTON_COMMON_DIR "${CMAKE_CURRENT_SOURCE_DIR}/common")
 
+# ============ Vendor gating =============
+# Proton builds vendor-specific profiling paths (CUPTI for NVIDIA,
+# rocprofiler-sdk/roctracer for AMD) alongside the portable instrumentation
+# profiler.  When the enclosing Triton build selects a strict subset of
+# codegen backends, restrict the vendor paths to the selected vendors.
+# Standalone proton builds (no TRITON_CODEGEN_BACKENDS) keep everything.
+set(PROTON_BUILD_NVIDIA ON)
+set(PROTON_BUILD_AMD ON)
+if(DEFINED TRITON_CODEGEN_BACKENDS AND NOT TRITON_CODEGEN_BACKENDS STREQUAL "")
+  list(FIND TRITON_CODEGEN_BACKENDS "nvidia" PROTON_NVIDIA_BACKEND_INDEX)
+  list(FIND TRITON_CODEGEN_BACKENDS "amd" PROTON_AMD_BACKEND_INDEX)
+  if(PROTON_NVIDIA_BACKEND_INDEX EQUAL -1)
+    set(PROTON_BUILD_NVIDIA OFF)
+  endif()
+  if(PROTON_AMD_BACKEND_INDEX EQUAL -1)
+    set(PROTON_BUILD_AMD OFF)
+  endif()
+endif()
+
 # ============ Check for includes =============
-if(NOT CUPTI_INCLUDE_DIR)
+if(PROTON_BUILD_NVIDIA AND NOT CUPTI_INCLUDE_DIR)
   message(FATAL_ERROR "CUPTI include directory not defined")
 endif()
-if(NOT ROCM_INCLUDE_DIR)
+if(PROTON_BUILD_AMD AND NOT ROCM_INCLUDE_DIR)
   message(FATAL_ERROR "ROCM include directory not defined")
 endif()
 if(NOT JSON_INCLUDE_DIR)
@@ -21,16 +40,18 @@ if(NOT ROCPROFILER_SDK_INCLUDE_DIR)
 endif()
 
 unset(PROTON_ROCPROFILER_SDK_HAS_HIP_GRAPH CACHE)
-set(_proton_saved_cmake_required_includes "${CMAKE_REQUIRED_INCLUDES}")
-set(CMAKE_REQUIRED_INCLUDES "${ROCPROFILER_SDK_INCLUDE_DIR};${ROCM_INCLUDE_DIR}")
-check_cxx_source_compiles([=[
-  #include <rocprofiler-sdk/fwd.h>
-  int main() {
-    auto op = ROCPROFILER_HIP_GRAPH_OPERATION_EXEC_LAUNCH;
-    return static_cast<int>(op);
-  }
-]=] PROTON_ROCPROFILER_SDK_HAS_HIP_GRAPH)
-set(CMAKE_REQUIRED_INCLUDES "${_proton_saved_cmake_required_includes}")
+if(PROTON_BUILD_AMD)
+  set(_proton_saved_cmake_required_includes "${CMAKE_REQUIRED_INCLUDES}")
+  set(CMAKE_REQUIRED_INCLUDES "${ROCPROFILER_SDK_INCLUDE_DIR};${ROCM_INCLUDE_DIR}")
+  check_cxx_source_compiles([=[
+    #include <rocprofiler-sdk/fwd.h>
+    int main() {
+      auto op = ROCPROFILER_HIP_GRAPH_OPERATION_EXEC_LAUNCH;
+      return static_cast<int>(op);
+    }
+  ]=] PROTON_ROCPROFILER_SDK_HAS_HIP_GRAPH)
+  set(CMAKE_REQUIRED_INCLUDES "${_proton_saved_cmake_required_includes}")
+endif()
 
 if(PROTON_ROCPROFILER_SDK_HAS_HIP_GRAPH)
   message(STATUS "Proton ROCProfiler-SDK HIP graph tracing: enabled")
@@ -40,7 +61,7 @@ endif()
 
 unset(PROTON_ROCPROFILER_SDK_HAS_PC_SAMPLING CACHE)
 set(PROTON_ROCPROFILER_SDK_HAS_PC_SAMPLING OFF)
-if(EXISTS "${ROCPROFILER_SDK_INCLUDE_DIR}/rocprofiler-sdk/pc_sampling.h")
+if(PROTON_BUILD_AMD AND EXISTS "${ROCPROFILER_SDK_INCLUDE_DIR}/rocprofiler-sdk/pc_sampling.h")
   set(PROTON_ROCPROFILER_SDK_HAS_PC_SAMPLING ON)
 endif()
 
@@ -50,34 +71,30 @@ else()
   message(STATUS "Proton ROCProfiler-SDK PC sampling: disabled")
 endif()
 
-get_filename_component(_PROTON_ROCM_ROOT "${ROCM_INCLUDE_DIR}" DIRECTORY)
+if(PROTON_BUILD_AMD)
+  get_filename_component(_PROTON_ROCM_ROOT "${ROCM_INCLUDE_DIR}" DIRECTORY)
 
-find_library(PROTON_AMD_COMGR_LIBRARY
-  NAMES amd_comgr
-  HINTS "${_PROTON_ROCM_ROOT}/lib"
-  NO_DEFAULT_PATH)
-find_library(PROTON_DW_LIBRARY
-  NAMES dw
-  HINTS "${_PROTON_ROCM_ROOT}/lib/rocm_sysdeps/lib")
-find_path(PROTON_DWARF_INCLUDE_DIR
-  NAMES dwarf.h
-  HINTS "${_PROTON_ROCM_ROOT}/lib/rocm_sysdeps/include")
+  find_library(PROTON_AMD_COMGR_LIBRARY
+    NAMES amd_comgr
+    HINTS "${_PROTON_ROCM_ROOT}/lib"
+    NO_DEFAULT_PATH)
+  find_library(PROTON_DW_LIBRARY
+    NAMES dw
+    HINTS "${_PROTON_ROCM_ROOT}/lib/rocm_sysdeps/lib")
+  find_path(PROTON_DWARF_INCLUDE_DIR
+    NAMES dwarf.h
+    HINTS "${_PROTON_ROCM_ROOT}/lib/rocm_sysdeps/include")
+endif()
 
 unset(PROTON_ROCPROFILER_SDK_HAS_CODEOBJ_ADDRESS_TRANSLATE CACHE)
 set(PROTON_ROCPROFILER_SDK_HAS_CODEOBJ_ADDRESS_TRANSLATE OFF)
-if(PROTON_ROCPROFILER_SDK_HAS_PC_SAMPLING AND
+if(PROTON_BUILD_AMD AND PROTON_ROCPROFILER_SDK_HAS_PC_SAMPLING AND
    EXISTS
      "${ROCPROFILER_SDK_INCLUDE_DIR}/rocprofiler-sdk/cxx/codeobj/code_printing.hpp"
    AND
    PROTON_AMD_COMGR_LIBRARY AND PROTON_DW_LIBRARY AND
    PROTON_DWARF_INCLUDE_DIR)
   set(PROTON_ROCPROFILER_SDK_HAS_CODEOBJ_ADDRESS_TRANSLATE ON)
-endif()
-
-if(PROTON_ROCPROFILER_SDK_HAS_CODEOBJ_ADDRESS_TRANSLATE)
-  message(STATUS "Proton ROCProfiler-SDK code object source locations: enabled")
-else()
-  message(STATUS "Proton ROCProfiler-SDK code object source locations: disabled")
 endif()
 
 # ============ Dependencies =============
@@ -107,26 +124,47 @@ function(add_proton_library name)
   target_link_libraries(${name} PRIVATE Python3::Module nanobind-static)
 
   # Use system to skip warnings caused by legacy clang compilers
-  target_include_directories(${name}
-    SYSTEM PRIVATE
-      ${ROCPROFILER_SDK_INCLUDE_DIR}
-      "${ROCM_INCLUDE_DIR}"
-  )
+  if(PROTON_BUILD_AMD)
+    target_include_directories(${name}
+      SYSTEM PRIVATE
+        ${ROCPROFILER_SDK_INCLUDE_DIR}
+        "${ROCM_INCLUDE_DIR}"
+    )
+  endif()
 
   target_include_directories(${name}
     PRIVATE
-      "${CUPTI_INCLUDE_DIR}"
-      "${JSON_INCLUDE_DIR}"
       "${PROTON_COMMON_DIR}/include"
       "${PROTON_SRC_DIR}/include"
   )
+  # Vendored nlohmann/json is not warning-clean under newer toolchains
+  # (e.g. GCC 16 deprecates std::is_trivial); treat it as a system include.
+  target_include_directories(${name} SYSTEM PRIVATE
+      "${JSON_INCLUDE_DIR}"
+  )
+  if(PROTON_BUILD_NVIDIA)
+    target_include_directories(${name} PRIVATE "${CUPTI_INCLUDE_DIR}")
+  endif()
   if(PROTON_ROCPROFILER_SDK_HAS_CODEOBJ_ADDRESS_TRANSLATE)
     target_include_directories(${name} SYSTEM PRIVATE
       "${PROTON_DWARF_INCLUDE_DIR}")
   endif()
 
+  if(PROTON_BUILD_NVIDIA)
+    target_compile_definitions(${name} PRIVATE PROTON_HAS_NVIDIA_BACKEND=1)
+  else()
+    target_compile_definitions(${name} PRIVATE PROTON_HAS_NVIDIA_BACKEND=0)
+  endif()
+  if(PROTON_BUILD_AMD)
+    target_compile_definitions(${name} PRIVATE PROTON_HAS_AMD_BACKEND=1)
+  else()
+    target_compile_definitions(${name} PRIVATE PROTON_HAS_AMD_BACKEND=0)
+  endif()
+
   # If HIP is AMD-based
-  target_compile_definitions(${name} PRIVATE __HIP_PLATFORM_AMD__)
+  if(PROTON_BUILD_AMD)
+    target_compile_definitions(${name} PRIVATE __HIP_PLATFORM_AMD__)
+  endif()
   if(PROTON_ROCPROFILER_SDK_HAS_HIP_GRAPH)
     target_compile_definitions(${name} PRIVATE
       PROTON_ROCPROFILER_SDK_HAS_HIP_GRAPH=1)
