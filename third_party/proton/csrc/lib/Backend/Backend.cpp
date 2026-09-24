@@ -1,21 +1,29 @@
 #include "Backend/Backend.h"
-#include "Driver/GPU/CudaApi.h"
-#include "Driver/GPU/HipApi.h"
-#include "Profiler/Cupti/CuptiProfiler.h"
 #include "Profiler/Instrumentation/InstrumentationProfiler.h"
+#if PROTON_HAS_NVIDIA_BACKEND
+#include "Driver/GPU/CudaApi.h"
+#include "Profiler/Cupti/CuptiProfiler.h"
+#include "Runtime/CudaRuntime.h"
+#endif
+#if PROTON_HAS_AMD_BACKEND
+#include "Driver/GPU/HipApi.h"
 #include "Profiler/RocprofSDK/RocprofSDKProfiler.h"
 #include "Profiler/Roctracer/RoctracerProfiler.h"
-#include "Runtime/CudaRuntime.h"
 #include "Runtime/HipRuntime.h"
+#endif
 #include <vector>
 
 namespace proton {
 
 const std::vector<ProfilerRegistration> getProfilerRegistrations() {
   std::vector<ProfilerRegistration> registeredProfilers = {
+#if PROTON_HAS_NVIDIA_BACKEND
       {"cupti", "cuda", []() { return &CuptiProfiler::instance(); }},
+#endif
+#if PROTON_HAS_AMD_BACKEND
       {"rocprofiler", "hip", []() { return &RocprofSDKProfiler::instance(); }},
       {"roctracer", {}, []() { return &RoctracerProfiler::instance(); }},
+#endif
       {"instrumentation",
        {},
        []() { return &InstrumentationProfiler::instance(); }},
@@ -30,10 +38,14 @@ const std::vector<ProfilerRegistration> getProfilerRegistrations() {
 
 const std::vector<DeviceRegistration> getDeviceRegistrations() {
   std::vector<DeviceRegistration> registeredDevices = {
+#if PROTON_HAS_NVIDIA_BACKEND
       {"CUDA", DeviceType::CUDA,
        [](uint64_t index) { return cuda::getDevice(index); }},
+#endif
+#if PROTON_HAS_AMD_BACKEND
       {"HIP", DeviceType::HIP,
        [](uint64_t index) { return hip::getDevice(index); }},
+#endif
   };
   for (const auto &backend : getBackendRegistrations()) {
     const auto &device = backend.getDevice();
@@ -45,8 +57,12 @@ const std::vector<DeviceRegistration> getDeviceRegistrations() {
 
 const std::vector<RuntimeRegistration> getRuntimeRegistrations() {
   std::vector<RuntimeRegistration> registeredRuntimes = {
+#if PROTON_HAS_NVIDIA_BACKEND
       {"CUDA", []() { return &CudaRuntime::instance(); }},
+#endif
+#if PROTON_HAS_AMD_BACKEND
       {"HIP", []() { return &HipRuntime::instance(); }},
+#endif
   };
   for (const auto &backend : getBackendRegistrations()) {
     const auto &runtime = backend.getRuntime();
