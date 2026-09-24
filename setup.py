@@ -452,8 +452,41 @@ def get_package_dirs():
         yield ("triton.profiler.hooks", "third_party/proton/proton/hooks")
 
 
+def get_unselected_vendor_names():
+    selected = {b.name for b in backends if not b.is_external}
+    return [name for name in ["nvidia", "amd"] if name not in selected]
+
+
+def get_gluon_vendor_excludes():
+    """Gluon vendor-specific Python packages for in-tree backends that are not
+    part of this wheel.  Their C++ bindings are compiled out as well (see
+    TRITON_HAS_*_BACKEND in python/src), so shipping them would only give
+    users modules that fail at runtime."""
+    excludes = []
+    for name in get_unselected_vendor_names():
+        for prefix in (f"triton.experimental.gluon.{name}",
+                       f"triton.experimental.gluon.language.{name}"):
+            excludes += [prefix, prefix + ".*"]
+    return excludes
+
+
+def get_gluon_vendor_data_excludes():
+    """Drop unselected vendor gluon directories from package data.
+
+    Excluding the packages alone is not enough: with include_package_data
+    the files re-enter the wheel as data of the parent package (the whole
+    tree is grafted into the sdist manifest)."""
+    excludes = {}
+    for name in get_unselected_vendor_names():
+        for pkg in ("triton.experimental.gluon",
+                    "triton.experimental.gluon.language"):
+            excludes.setdefault(pkg, []).append(f"{name}/*")
+            excludes.setdefault(pkg, []).append(f"{name}/**/*")
+    return excludes
+
+
 def get_packages():
-    yield from find_packages(where="python")
+    yield from find_packages(where="python", exclude=get_gluon_vendor_excludes())
 
     for backend in backends:
         yield f"triton.backends.{backend.name}"
@@ -640,11 +673,14 @@ setup(
     package_dir=dict(get_package_dirs()),
     entry_points=get_entry_points(),
     include_package_data=True,
-    exclude_package_data={"": [
-        "__pycache__",
-        "__pycache__/*",
-        "*.py[cod]",
-    ]},
+    exclude_package_data={
+        "": [
+            "__pycache__",
+            "__pycache__/*",
+            "*.py[cod]",
+        ],
+        **get_gluon_vendor_data_excludes(),
+    },
     package_data={
         # Headers and TableGen definitions copied into the wheel staging dir by
         # the wheel_headers CMake install component.  Paths are relative to the
