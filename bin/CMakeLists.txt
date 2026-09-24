@@ -1,5 +1,10 @@
 get_property(triton_libs GLOBAL PROPERTY TRITON_LIBS)
 
+# Only built when the AMD backend plugin (and unit tests) are enabled.
+if(TARGET TritonAMDGPUTestAnalysis)
+  list(APPEND triton_libs TritonAMDGPUTestAnalysis)
+endif()
+
 add_executable(triton-opt triton-opt.cpp)
 
 target_compile_options(triton-opt PRIVATE ${TRITON_DISABLE_EH_RTTI_FLAGS})
@@ -8,7 +13,6 @@ target_link_libraries(triton-opt PRIVATE
   # tests
   TritonTestAnalysis
   TritonTestDialect
-  TritonAMDGPUTestAnalysis
   TritonTestProton
   # MLIR core
   MLIROptLib
@@ -29,7 +33,6 @@ target_link_libraries(triton-reduce PRIVATE
   # tests
   TritonTestAnalysis
   TritonTestDialect
-  TritonAMDGPUTestAnalysis
   TritonTestProton
   # MLIR core
   MLIRReduceLib
@@ -49,7 +52,6 @@ target_link_libraries(triton-lsp PRIVATE
   # tests
   TritonTestAnalysis
   TritonTestDialect
-  TritonAMDGPUTestAnalysis
   TritonTestProton
   # MLIR core
   MLIRLspServerLib
@@ -84,7 +86,6 @@ target_link_libraries(triton-tensor-layout PRIVATE
   TritonTestAnalysis
   TritonTestDialect
   TritonTestProton
-  TritonAMDGPUTestAnalysis
   MLIRRegisterAllDialects
   MLIRRegisterAllPasses
   MLIRTransforms

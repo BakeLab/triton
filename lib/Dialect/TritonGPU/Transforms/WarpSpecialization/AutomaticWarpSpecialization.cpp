@@ -4,11 +4,15 @@
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Transforms/Passes.h"
+#if TRITON_HAS_NVIDIA_BACKEND
 #include "third_party/nvidia/include/Dialect/NVWS/Transforms/Passes.h"
+#endif
 #include "triton/Dialect/TritonGPU/Transforms/Passes.h"
 #include "triton/Dialect/TritonGPU/Transforms/PipeliningUtility.h"
 #include "triton/Dialect/TritonGPU/Transforms/Schedule.h"
 #include "triton/Dialect/TritonGPU/Transforms/Utility.h"
+
+#if TRITON_HAS_NVIDIA_BACKEND
 
 using namespace mlir;
 using namespace triton;
@@ -121,3 +125,29 @@ void AutomaticWarpSpecialization::runOnOperation() {
   multiBufferTMADescriptors(getOperation(), numStages);
   clearInternalWarpSpecializationAttrs(getOperation());
 }
+
+#else
+
+// Automatic warp specialization drives the NVIDIA NVWS pipeline; without the
+// backend it errors out.
+namespace mlir::triton::gpu {
+#define GEN_PASS_DEF_TRITONGPUAUTOMATICWARPSPECIALIZATION
+#include "triton/Dialect/TritonGPU/Transforms/Passes.h.inc"
+} // namespace mlir::triton::gpu
+
+namespace {
+struct AutomaticWarpSpecialization
+    : triton::gpu::impl::TritonGPUAutomaticWarpSpecializationBase<
+          AutomaticWarpSpecialization> {
+  using TritonGPUAutomaticWarpSpecializationBase::
+      TritonGPUAutomaticWarpSpecializationBase;
+
+  void runOnOperation() override {
+    getOperation()->emitError(
+        "automatic warp specialization requires the NVIDIA backend");
+    signalPassFailure();
+  }
+};
+} // namespace
+
+#endif

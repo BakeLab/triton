@@ -1,3 +1,11 @@
+# The NVWS dialect libraries back the warp-specialization passes and are
+# only linked when the nvidia backend is part of this build.
+list(FIND TRITON_CODEGEN_BACKENDS "nvidia" _tg_transforms_nvidia_index)
+set(_tg_transforms_nvidia_libs NVWSIR NVWSTransforms)
+if(_tg_transforms_nvidia_index EQUAL -1)
+  set(_tg_transforms_nvidia_libs "")
+endif()
+
 add_triton_library(TritonGPUTransforms
   AccelerateMatmul.cpp
   Coalesce.cpp
@@ -51,8 +59,7 @@ add_triton_library(TritonGPUTransforms
   TritonTransforms
   TritonGPUIR
   TritonNvidiaGPUIR
-  NVWSIR
-  NVWSTransforms
+  ${_tg_transforms_nvidia_libs}
   TritonToTritonGPU
   TritonInstrumentIR
   MLIRTransformUtils

@@ -1,9 +1,11 @@
 #include "mlir/Conversion/LLVMCommon/Pattern.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/IR/ImplicitLocOpBuilder.h"
+#if TRITON_HAS_NVIDIA_BACKEND
 #include "third_party/nvidia/include/Dialect/NVGPU/IR/Dialect.h"
 #include "third_party/nvidia/include/TritonNVIDIAGPUToLLVM/PTXAsmFormat.h"
 #include "third_party/nvidia/lib/TritonNVIDIAGPUToLLVM/Utility.h"
+#endif
 #include "triton/Conversion/TritonGPUToLLVM/PatternTritonGPUOpToLLVM.h"
 #include "triton/Conversion/TritonGPUToLLVM/TargetInfoBase.h"
 #include "triton/Conversion/TritonGPUToLLVM/Utility.h"
@@ -85,9 +87,13 @@ struct BufferDescriptorsOpConversion
     } else {
       assert(op.getMemType() == tti::MemType::TENSOR_MEM &&
              "Unsupported memory type");
+#if TRITON_HAS_NVIDIA_BACKEND
       Value basePtr = nvgpu::TensorMemoryBaseAddress::create(rewriter, loc);
       Value base = b.ptrtoint(i64Ty, basePtr);
       baseTensor = triton::SplatOp::create(rewriter, loc, tensorType, base);
+#else
+      return op.emitError("tensor memory requires the NVIDIA backend");
+#endif
     }
 
     pointerTensor = arith::AddIOp::create(
@@ -164,9 +170,12 @@ struct LockAcquireOpConversion
     b.setInsertionPointToEnd(prevBlock2);
 
     Value elect;
+#if TRITON_HAS_NVIDIA_BACKEND
     if (targetInfo.isCuda()) {
       elect = mlir::LLVM::NVIDIA::createElectPredicateWarp0(loc, b);
-    } else {
+    } else
+#endif
+    {
       TritonLLVMOpBuilder tb(loc, b);
       auto [laneId, warpId] = getLaneAndWarpId(b, loc);
       Value lane0 = tb.icmp_eq(laneId, tb.i32_val(0));
@@ -186,6 +195,7 @@ struct LockAcquireOpConversion
     Value one =
         arith::ConstantOp::create(b, loc, i32, b.getIntegerAttr(i32, 1));
 
+#if TRITON_HAS_NVIDIA_BACKEND
     if (targetInfo.isCuda()) {
       // Inline PTX CAS: old = atom.global.acquire.gpu.cas.b32 [lock], 0, 1
       // Use converted lock pointer from adaptor for addressing
@@ -202,7 +212,9 @@ struct LockAcquireOpConversion
       Value cond =
           arith::CmpIOp::create(b, loc, arith::CmpIPredicate::ne, old, zero);
       LLVM::CondBrOp::create(b, loc, cond, whileBlock, endBlock);
-    } else {
+    } else
+#endif
+    {
       Value oldVal = LLVM::AtomicRMWOp::create(
           b, loc, LLVM::AtomicBinOp::xchg, adaptor.getLock(), one,
           LLVM::AtomicOrdering::acquire,
@@ -254,6 +266,7 @@ struct LockReleaseOpConversion
     Value zero =
         arith::ConstantOp::create(b, loc, i32, b.getIntegerAttr(i32, 0));
 
+#if TRITON_HAS_NVIDIA_BACKEND
     if (targetInfo.isCuda()) {
       Value elect = mlir::LLVM::NVIDIA::createElectPredicateWarp0(loc, b);
 
@@ -265,7 +278,9 @@ struct LockReleaseOpConversion
       atom.global().o("release").o("gpu").o("exch").o("b32");
       atom(dstOpr, ptrOpr, valOpr).predicate(elect);
       ptx.launch(b, loc, i32);
-    } else {
+    } else
+#endif
+    {
       LLVM::AtomicRMWOp::create(b, loc, LLVM::AtomicBinOp::xchg,
                                 adaptor.getLock(), zero,
                                 LLVM::AtomicOrdering::release,
@@ -317,9 +332,13 @@ public:
     } else {
       assert(op.getMemType() == tti::MemType::TENSOR_MEM &&
              "unsupported memory type");
+#if TRITON_HAS_NVIDIA_BACKEND
       Value basePtr =
           nvgpu::TensorMemoryBaseAddress::create(rewriter, op.getLoc());
       base = b.ptrtoint(i32Ty, basePtr);
+#else
+      return op.emitError("tensor memory requires the NVIDIA backend");
+#endif
     }
 
     Value address = b.add(base, b.i32_val(op.getOffset()));

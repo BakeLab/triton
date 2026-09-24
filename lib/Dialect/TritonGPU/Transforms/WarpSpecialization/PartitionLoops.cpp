@@ -7,14 +7,18 @@
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 #include "mlir/Transforms/RegionUtils.h"
+#if TRITON_HAS_NVIDIA_BACKEND
 #include "nvidia/include/Dialect/NVWS/IR/Dialect.h"
 #include "nvidia/include/Dialect/NVWS/Transforms/Passes.h"
+#endif
 #include "triton/Dialect/TritonGPU/IR/Dialect.h"
 #include "triton/Dialect/TritonGPU/Transforms/Partition.h"
 #include "triton/Dialect/TritonGPU/Transforms/PipeliningUtility.h"
 #include "triton/Dialect/TritonGPU/Transforms/Utility.h"
 #include "triton/Dialect/TritonGPU/Transforms/WarpSpecialization.h"
 #include "llvm/ADT/SCCIterator.h"
+
+#if TRITON_HAS_NVIDIA_BACKEND
 
 using namespace mlir;
 using namespace triton;
@@ -649,3 +653,27 @@ void PartitionLoops::runOnOperation() {
       return signalPassFailure();
   }
 }
+
+#else
+
+// Loop partitioning emits NVWS warp-group ops and is only reachable from the
+// NVIDIA warp-specialization pipeline; without the backend it errors out.
+namespace mlir::triton::gpu {
+#define GEN_PASS_DEF_TRITONGPUPARTITIONLOOPS
+#include "triton/Dialect/TritonGPU/Transforms/Passes.h.inc"
+} // namespace mlir::triton::gpu
+
+namespace {
+struct PartitionLoops
+    : triton::gpu::impl::TritonGPUPartitionLoopsBase<PartitionLoops> {
+  using TritonGPUPartitionLoopsBase::TritonGPUPartitionLoopsBase;
+
+  void runOnOperation() override {
+    getOperation()->emitError(
+        "partition-loops requires the NVIDIA backend");
+    signalPassFailure();
+  }
+};
+} // namespace
+
+#endif
