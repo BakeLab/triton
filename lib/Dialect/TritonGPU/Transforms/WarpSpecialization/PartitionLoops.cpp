@@ -7,8 +7,8 @@
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 #include "mlir/Transforms/RegionUtils.h"
-#if TRITON_HAS_NVIDIA_BACKEND
 #include "nvidia/include/Dialect/NVWS/IR/Dialect.h"
+#if TRITON_HAS_NVIDIA_BACKEND
 #include "nvidia/include/Dialect/NVWS/Transforms/Passes.h"
 #endif
 #include "triton/Dialect/TritonGPU/IR/Dialect.h"
@@ -665,7 +665,7 @@ namespace mlir::triton::gpu {
 
 namespace {
 struct PartitionLoops
-    : triton::gpu::impl::TritonGPUPartitionLoopsBase<PartitionLoops> {
+    : mlir::triton::gpu::impl::TritonGPUPartitionLoopsBase<PartitionLoops> {
   using TritonGPUPartitionLoopsBase::TritonGPUPartitionLoopsBase;
 
   void runOnOperation() override {

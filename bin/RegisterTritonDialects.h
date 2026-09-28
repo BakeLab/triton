@@ -116,11 +116,11 @@ inline void registerTritonDialects(mlir::DialectRegistry &registry) {
   mlir::triton::gpu::registerTritonGPUAllocateWarpGroups();
   mlir::triton::gpu::registerTritonGPUGlobalScratchAllocationPass();
   mlir::triton::gpu::registerCanonicalizeLLVMIR();
+#if TRITON_HAS_NVIDIA_BACKEND
   mlir::triton::registerConvertWarpSpecializeToLLVM();
   mlir::triton::registerInitializeWSClusterBarriers();
   mlir::triton::registerTritonNvidiaGPUMembar();
   mlir::triton::registerConvertTritonGPUToLLVMPass();
-#if TRITON_HAS_NVIDIA_BACKEND
   mlir::triton::registerConvertNVGPUToLLVMPass();
   mlir::triton::registerAllocateSharedMemoryNvPass();
   mlir::triton::registerSetMinimumSharedMemoryPass();
