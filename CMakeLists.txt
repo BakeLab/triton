@@ -373,6 +373,17 @@ if(TRITON_BUILD_PYTHON_MODULE)
   list(FIND TRITON_CODEGEN_BACKENDS "nvidia" TRITON_NVIDIA_BACKEND_INDEX)
   list(FIND TRITON_CODEGEN_BACKENDS "amd" TRITON_AMD_BACKEND_INDEX)
 
+  # The TritonGPU warp-specialization passes reference the NVWS dialect
+  # regardless of the selected backends; when the NVIDIA backend is not built,
+  # still generate its pure-MLIR dialect libraries so single-backend builds
+  # compile and link.
+  if(TRITON_NVIDIA_BACKEND_INDEX EQUAL -1)
+    add_subdirectory(third_party/nvidia/include/Dialect/NVWS
+                    third_party/nvidia/include/Dialect/NVWS)
+    add_subdirectory(third_party/nvidia/lib/Dialect/NVWS
+                    third_party/nvidia/lib/Dialect/NVWS)
+  endif()
+
   if (TRITON_BUILD_PROTON)
     add_subdirectory(third_party/proton)
   endif()

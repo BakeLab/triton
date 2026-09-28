@@ -142,7 +142,7 @@ namespace mlir::triton::gpu {
 
 namespace {
 struct AutomaticWarpSpecialization
-    : triton::gpu::impl::TritonGPUAutomaticWarpSpecializationBase<
+    : mlir::triton::gpu::impl::TritonGPUAutomaticWarpSpecializationBase<
           AutomaticWarpSpecialization> {
   using TritonGPUAutomaticWarpSpecializationBase::
       TritonGPUAutomaticWarpSpecializationBase;
