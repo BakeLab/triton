@@ -644,7 +644,9 @@ def get_triton_version_suffix():
 
 
 # keep it separate for easy substitution
-TRITON_VERSION = "3.9.0" + get_triton_version_suffix()
+TRITON_VERSION = os.environ.get(
+    "TRITON_BUILD_VERSION", "3.9.0" + get_triton_version_suffix()
+)
 
 # Dynamically define supported Python versions and classifiers
 MIN_PYTHON = (3, 14)
@@ -667,9 +669,7 @@ setup(
     description="A language and compiler for custom Deep Learning operations",
     long_description="",
     license="MIT",
-    install_requires=[
-        "torch==2.15.0.dev20260922+cuda.13.4.sm120.znver4.g13c687ff",
-    ],
+    install_requires=["torch"],
     packages=list(get_packages()),
     package_dir=dict(get_package_dirs()),
     entry_points=get_entry_points(),
