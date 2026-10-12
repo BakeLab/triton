@@ -377,6 +377,13 @@ if(TRITON_BUILD_PYTHON_MODULE)
   list(FIND TRITON_CODEGEN_BACKENDS "nvidia" TRITON_NVIDIA_BACKEND_INDEX)
   list(FIND TRITON_CODEGEN_BACKENDS "amd" TRITON_AMD_BACKEND_INDEX)
 
+  # llvm.cc exposes MIR scheduling-DAG inspection independently of the GPU
+  # backend selected for this build. Build its implementation for NVIDIA-only
+  # wheels too; the AMD backend adds this target through its normal CMake tree.
+  if(TRITON_AMD_BACKEND_INDEX EQUAL -1)
+    add_subdirectory(third_party/amd/lib/Target/MIRDAG)
+  endif()
+
   # The TritonGPU warp-specialization passes reference the NVWS dialect
   # regardless of the selected backends; when the NVIDIA backend is not built,
   # still generate its pure-MLIR dialect libraries so single-backend builds
@@ -437,6 +444,7 @@ if(TRITON_BUILD_PYTHON_MODULE)
   set(TRITON_LIBRARIES
     ${triton_libs}
     ${triton_plugins}
+    TritonAMDMIRDAG
 
     # mlir
     MLIRNVVMDialect
