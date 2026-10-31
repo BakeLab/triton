@@ -48,7 +48,7 @@ jobs:
               export CXX=/opt/gcc16/bin/x86_64-conda-linux-gnu-g++
               export LD_LIBRARY_PATH="/opt/gcc16/lib:${LD_LIBRARY_PATH:-}"
               "$CXX" --version > /workspace/cuda-ci-results/compiler.txt
-              /opt/python/cp314-cp314/bin/python -m venv /opt/venv
+              /opt/python/cp315-cp315/bin/python -m venv /opt/venv
               export PATH="/opt/venv/bin:$PATH"
               make dev-install-torch
               make dev-install
