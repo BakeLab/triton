@@ -1,0 +1,72 @@
+name: Trim CUDA CI
+
+on:
+  push:
+    branches: [trim]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: trim-cuda-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cuda:
+    if: github.repository == 'BakeLab/triton' && github.server_url != 'https://github.com'
+    runs-on: [self-hosted, linux, x64, bb, cuda]
+    timeout-minutes: 360
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ github.sha }}
+          path: triton
+          persist-credentials: false
+
+      - name: Build and test this commit
+        run: |
+          mkdir -p cuda-ci-results
+          git -C triton rev-parse HEAD > cuda-ci-results/triton.sha
+          image=pytorch/manylinux2_28-builder:cuda13.4@sha256:3e1044020327d2783e2729accadacea14791313f2ba2548671f73e7d58ef8fba
+          printf '%s\n' "$image" > cuda-ci-results/build-image.txt
+          docker run --name "triton-cuda-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+            --gpus all --shm-size=8g --volume "$GITHUB_WORKSPACE:/workspace" \
+            --workdir /workspace/triton --env MAX_JOBS=4 \
+            --env TRITON_USE_ASSERT_ENABLED_LLVM=TRUE \
+            --env TRITON_DISABLE_LINE_INFO=1 --env PROTON_SKIP_PC_SAMPLING_TEST=1 \
+            --env TRITON_TEST_JUNIT_DIR=/workspace/cuda-ci-results \
+            --env PYTEST_ADDOPTS="-s --tb=short" \
+            "$image" bash -euo pipefail -c '
+              /opt/conda/bin/conda create --yes --prefix /opt/gcc16 \
+                --override-channels --channel conda-forge \
+                gcc_linux-64=16.2.0 gxx_linux-64=16.2.0 sysroot_linux-64=2.28
+              export CC=/opt/gcc16/bin/x86_64-conda-linux-gnu-gcc
+              export CXX=/opt/gcc16/bin/x86_64-conda-linux-gnu-g++
+              export LD_LIBRARY_PATH="/opt/gcc16/lib:${LD_LIBRARY_PATH:-}"
+              "$CXX" --version > /workspace/cuda-ci-results/compiler.txt
+              /opt/python/cp314-cp314/bin/python -m venv /opt/venv
+              export PATH="/opt/venv/bin:$PATH"
+              make dev-install-torch
+              make dev-install
+              python -c "from pathlib import Path; import torch, triton; assert torch.cuda.is_available(); assert Path(triton.__file__).resolve().is_relative_to(Path.cwd())"
+              make NUM_GPUS=1 NUM_PROCS=4 test-lit test-cpp test-unit test-gluon test-gsan test-regression test-interpret test-proton
+            ' 2>&1 | tee cuda-ci-results/build-and-test.log
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: trim-cuda-${{ github.sha }}
+          path: cuda-ci-results/
+          if-no-files-found: warn
+
+      - name: Stop the build container
+        if: always()
+        run: |
+          container="triton-cuda-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          if docker container inspect "$container" > /dev/null 2>&1; then
+            docker rm -f "$container"
+          fi
