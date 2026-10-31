@@ -36,7 +36,7 @@ You can install the latest stable release of Triton from pip:
 pip install triton
 ```
 
-Binary wheels are available for CPython 3.10-3.14.
+This trim fork requires CPython 3.15. Its wheels target CPython 3.15.
 
 # Install from source
 

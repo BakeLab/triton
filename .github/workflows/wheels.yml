@@ -60,7 +60,7 @@ jobs:
 
       - uses: actions/setup-python@v7
         with:
-          python-version: '3.14'
+          python-version: '3.15'
 
       - name: Patch setup.py
         if: ${{ steps.check-version.outputs.new_commit == 'true' }}
@@ -98,8 +98,8 @@ jobs:
             export CIBW_MANYLINUX_AARCH64_IMAGE="quay.io/pypa/manylinux_2_28_${{ matrix.config.arch }}:latest"
           fi
 
-          # The trimmed branch supports Python 3.14 only.
-          export CIBW_BUILD="cp314-manylinux_${{ matrix.config.arch }}"
+          # The trimmed branch supports Python 3.15 only.
+          export CIBW_BUILD="cp315-manylinux_${{ matrix.config.arch }}"
           export CIBW_ENVIRONMENT="MAX_JOBS=4 TRITON_EXT_ENABLED=ON TRITON_BUILD_WITH_CLANG_LLD=1 TRITON_STABLE_ABI=ON"
           python3 -m cibuildwheel . --output-dir wheelhouse
 

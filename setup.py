@@ -411,10 +411,7 @@ def get_in_tree_backends(available):
     selected = [name.strip() for name in requested.split(",") if name.strip()]
     unknown = sorted(set(selected) - set(available))
     if unknown:
-        raise ValueError(
-            "TRITON_CODEGEN_BACKENDS contains unsupported backend(s): "
-            + ", ".join(unknown)
-        )
+        raise ValueError("TRITON_CODEGEN_BACKENDS contains unsupported backend(s): " + ", ".join(unknown))
     if not selected:
         raise ValueError("TRITON_CODEGEN_BACKENDS must select at least one backend")
     return [name for name in available if name in selected]
@@ -465,8 +462,7 @@ def get_gluon_vendor_excludes():
     users modules that fail at runtime."""
     excludes = []
     for name in get_unselected_vendor_names():
-        for prefix in (f"triton.experimental.gluon.{name}",
-                       f"triton.experimental.gluon.language.{name}"):
+        for prefix in (f"triton.experimental.gluon.{name}", f"triton.experimental.gluon.language.{name}"):
             excludes += [prefix, prefix + ".*"]
     return excludes
 
@@ -479,8 +475,7 @@ def get_gluon_vendor_data_excludes():
     tree is grafted into the sdist manifest)."""
     excludes = {}
     for name in get_unselected_vendor_names():
-        for pkg in ("triton.experimental.gluon",
-                    "triton.experimental.gluon.language"):
+        for pkg in ("triton.experimental.gluon", "triton.experimental.gluon.language"):
             excludes.setdefault(pkg, []).append(f"{name}/*")
             excludes.setdefault(pkg, []).append(f"{name}/**/*")
     return excludes
@@ -551,7 +546,7 @@ class plugin_bdist_wheel(bdist_wheel):
 
     def get_tag(self):
         if check_env_flag("TRITON_STABLE_ABI"):
-            return "cp314", "abi3", super().get_tag()[2]
+            return "cp315", "abi3", super().get_tag()[2]
         return super().get_tag()
 
     def run(self):
@@ -645,13 +640,11 @@ def get_triton_version_suffix():
 
 
 # keep it separate for easy substitution
-TRITON_VERSION = os.environ.get(
-    "TRITON_BUILD_VERSION", "3.9.0" + get_triton_version_suffix()
-)
+TRITON_VERSION = os.environ.get("TRITON_BUILD_VERSION", "3.9.0" + get_triton_version_suffix())
 
 # Dynamically define supported Python versions and classifiers
-MIN_PYTHON = (3, 14)
-MAX_PYTHON = (3, 14)
+MIN_PYTHON = (3, 15)
+MAX_PYTHON = (3, 15)
 
 PYTHON_REQUIRES = f">={MIN_PYTHON[0]}.{MIN_PYTHON[1]},<{MAX_PYTHON[0]}.{MAX_PYTHON[1] + 1}"
 BASE_CLASSIFIERS = [

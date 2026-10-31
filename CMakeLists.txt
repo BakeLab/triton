@@ -28,7 +28,7 @@ option(TRITON_BUILD_PYTHON_MODULE "Build Python Triton bindings" OFF)
 option(TRITON_BUILD_PROTON "Build the Triton Proton profiler" ON)
 option(TRITON_BUILD_NVIDIA_GSAN_RUNTIME
        "Build the CUDA/NVPTX GSan device runtime for the NVIDIA backend" ON)
-option(TRITON_STABLE_ABI "Build with Python Stable ABI (abi3) for Python 3.14+" OFF)
+option(TRITON_STABLE_ABI "Build with Python Stable ABI (abi3) for Python 3.15+" OFF)
 option(TRITON_BUILD_UT "Build C++ Triton Unit Tests" ON)
 option(TRITON_BUILD_WITH_CCACHE "Build with ccache (if available)" ON)
 option(TRITON_OFFLINE_BUILD "Build without downloading dependencies" OFF)
