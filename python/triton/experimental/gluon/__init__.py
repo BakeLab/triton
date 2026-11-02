@@ -13,9 +13,7 @@ except ImportError:
     # AMD-specific gluon modules are omitted from backend-specific wheels.
     amd = None
 
-__all__ = [
-    "aggregate", "constexpr_function", "GluonASTSource", "GluonJITFunction", "jit", "must_use_result"
-]
+__all__ = ["aggregate", "constexpr_function", "GluonASTSource", "GluonJITFunction", "jit", "must_use_result"]
 if nvidia is not None:
     __all__.append("nvidia")
 if amd is not None:

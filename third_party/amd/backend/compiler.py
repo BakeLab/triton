@@ -477,10 +477,8 @@ class HIPBackend(BaseBackend):
         super().__init__(target)
         assert isinstance(target.arch, str)
         if not self._supports_arch(target.arch):
-            raise ValueError(
-                "This Triton AMD backend supports gfx950 and gfx12* (2025+ GPUs) only; "
-                f"current target is {target.arch}"
-            )
+            raise ValueError("This Triton AMD backend supports gfx950 and gfx12* (2025+ GPUs) only; "
+                             f"current target is {target.arch}")
         self.binary_ext = "hsaco"
 
     def get_target_name(self, options) -> str:
@@ -496,10 +494,8 @@ class HIPBackend(BaseBackend):
         if opts.get("schedule_hint", "") not in ("", "mfma-schedule"):
             raise ValueError(f"schedule_hint: unknown value {opts['schedule_hint']!r}; supported: 'mfma-schedule'")
         if not self._supports_arch(args["arch"]):
-            raise ValueError(
-                "This Triton AMD backend supports gfx950 and gfx12* (2025+ GPUs) only; "
-                f"current target is {args['arch']}"
-            )
+            raise ValueError("This Triton AMD backend supports gfx950 and gfx12* (2025+ GPUs) only; "
+                             f"current target is {args['arch']}")
 
         if opts.get("num_ctas", 1) > 1 and not amd.supports_multi_cta_launch(self.target.arch):
             raise ValueError(f"num_ctas > 1 not supported on {self.target.arch}")

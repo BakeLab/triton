@@ -91,8 +91,7 @@ struct CanonicalizeLLVMIR
 #if TRITON_HAS_NVIDIA_BACKEND
                  ElideFullClusterRankMaskPattern,
 #endif
-                 FoldAbsIntoReduxPattern>(
-        &getContext());
+                 FoldAbsIntoReduxPattern>(&getContext());
 
     getContext()
         .getLoadedDialect<LLVM::LLVMDialect>()
