@@ -20,7 +20,6 @@ jobs:
       matrix:
         config:
         - {runs_on: ['self-hosted', 'CPU'], arch: 'x86_64'}
-        - {runs_on: 'ubuntu-22.04-arm', arch: 'aarch64'}
 
 
     permissions:
@@ -99,9 +98,6 @@ jobs:
           if [[ ${{ matrix.config.arch }} == 'x86_64' ]]; then
             export CIBW_MANYLINUX_X86_64_IMAGE="quay.io/pypa/manylinux_2_28_${{ matrix.config.arch }}:latest"
             docker pull "${CIBW_MANYLINUX_X86_64_IMAGE}"
-          else
-            export CIBW_MANYLINUX_AARCH64_IMAGE="quay.io/pypa/manylinux_2_28_${{ matrix.config.arch }}:latest"
-            docker pull "${CIBW_MANYLINUX_AARCH64_IMAGE}"
           fi
 
           # The trimmed branch supports Python 3.14 only.
