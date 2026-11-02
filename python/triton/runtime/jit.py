@@ -1024,7 +1024,13 @@ def jit(
 
     def decorator(fn: T) -> JITFunction[T]:
         if knobs.runtime.interpret:
-            from .interpreter import InterpretedFunction
+            try:
+                from .interpreter import InterpretedFunction
+            except ImportError as exc:
+                raise RuntimeError(
+                    "TRITON_INTERPRET=1 requires a Triton build with the interpreter backend; "
+                    "set TRITON_BUILD_INTERPRETER=ON when building Triton"
+                ) from exc
             return InterpretedFunction(fn, version=version, do_not_specialize=do_not_specialize,
                                        do_not_specialize_on_alignment=do_not_specialize_on_alignment, debug=debug,
                                        noinline=noinline, repr=repr, launch_metadata=launch_metadata)

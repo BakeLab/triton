@@ -104,7 +104,7 @@ dev-install-torch:
 
 .PHONY: dev-install-triton
 dev-install-triton:
-	$(PYTHON) -m pip install -e . --no-build-isolation -v
+	TRITON_BUILD_INTERPRETER=ON $(PYTHON) -m pip install -e . --no-build-isolation -v
 
 .PHONY: dev-install
 .NOPARALLEL: dev-install

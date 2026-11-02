@@ -201,6 +201,12 @@ class CMakeClean(clean):
 
 class CMakeBuildPy(build_py):
 
+    def find_package_modules(self, package, package_dir):
+        modules = super().find_package_modules(package, package_dir)
+        if check_env_flag("TRITON_BUILD_INTERPRETER"):
+            return modules
+        return [module for module in modules if module[1] != "triton.runtime.interpreter"]
+
     def run(self) -> None:
         self.run_command('build_ext')
         return super().run()
@@ -353,6 +359,7 @@ class CMakeBuild(build_ext):
             "TRITON_BUILD_WITH_CCACHE",
             "TRITON_PARALLEL_LINK_JOBS",
             "TRITON_OFFLINE_BUILD",
+            "TRITON_BUILD_INTERPRETER",
             "TRITON_LLVM_SYSTEM_SUFFIX",
             "TRITON_STABLE_ABI",
             "LLVM_SYSPATH",

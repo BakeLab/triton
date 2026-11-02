@@ -43,7 +43,9 @@ namespace py = nanobind;
 void init_triton_env_vars(nanobind::module_ &m);
 void init_triton_ir(nanobind::module_ &m);
 void init_triton_llvm(nanobind::module_ &m);
+#ifdef TRITON_HAS_INTERPRETER
 void init_triton_interpreter(nanobind::module_ &m);
+#endif
 void init_triton_passes(nanobind::module_ &m);
 void init_triton_stacktrace_hook(nanobind::module_ &m);
 void init_gluon_ir(nanobind::module_ &m);
@@ -62,8 +64,10 @@ NB_MODULE(libtriton, m) {
   init_triton_ir(ir_m);
   auto passes_m = m.def_submodule("passes");
   init_triton_passes(passes_m);
+#ifdef TRITON_HAS_INTERPRETER
   auto interpreter_m = m.def_submodule("interpreter");
   init_triton_interpreter(interpreter_m);
+#endif
   auto llvm_m = m.def_submodule("llvm");
   init_triton_llvm(llvm_m);
   auto gsan_m = m.def_submodule("gsan_testing");
