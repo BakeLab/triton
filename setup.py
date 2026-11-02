@@ -410,10 +410,7 @@ def get_in_tree_backends(available):
     selected = [name.strip() for name in requested.split(",") if name.strip()]
     unknown = sorted(set(selected) - set(available))
     if unknown:
-        raise ValueError(
-            "TRITON_CODEGEN_BACKENDS contains unsupported backend(s): "
-            + ", ".join(unknown)
-        )
+        raise ValueError("TRITON_CODEGEN_BACKENDS contains unsupported backend(s): " + ", ".join(unknown))
     if not selected:
         raise ValueError("TRITON_CODEGEN_BACKENDS must select at least one backend")
     return [name for name in available if name in selected]
@@ -464,8 +461,7 @@ def get_gluon_vendor_excludes():
     users modules that fail at runtime."""
     excludes = []
     for name in get_unselected_vendor_names():
-        for prefix in (f"triton.experimental.gluon.{name}",
-                       f"triton.experimental.gluon.language.{name}"):
+        for prefix in (f"triton.experimental.gluon.{name}", f"triton.experimental.gluon.language.{name}"):
             excludes += [prefix, prefix + ".*"]
     return excludes
 
@@ -478,8 +474,7 @@ def get_gluon_vendor_data_excludes():
     tree is grafted into the sdist manifest)."""
     excludes = {}
     for name in get_unselected_vendor_names():
-        for pkg in ("triton.experimental.gluon",
-                    "triton.experimental.gluon.language"):
+        for pkg in ("triton.experimental.gluon", "triton.experimental.gluon.language"):
             excludes.setdefault(pkg, []).append(f"{name}/*")
             excludes.setdefault(pkg, []).append(f"{name}/**/*")
     return excludes
@@ -644,9 +639,7 @@ def get_triton_version_suffix():
 
 
 # keep it separate for easy substitution
-TRITON_VERSION = os.environ.get(
-    "TRITON_BUILD_VERSION", "3.9.0" + get_triton_version_suffix()
-)
+TRITON_VERSION = os.environ.get("TRITON_BUILD_VERSION", "3.9.0" + get_triton_version_suffix())
 
 # Dynamically define supported Python versions and classifiers
 MIN_PYTHON = (3, 14)
