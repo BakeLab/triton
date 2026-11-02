@@ -25,6 +25,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 ################################################################################
 
 option(TRITON_BUILD_PYTHON_MODULE "Build Python Triton bindings" OFF)
+option(TRITON_BUILD_INTERPRETER "Build the Python interpreter backend" OFF)
 option(TRITON_BUILD_PROTON "Build the Triton Proton profiler" ON)
 option(TRITON_BUILD_NVIDIA_GSAN_RUNTIME
        "Build the CUDA/NVPTX GSan device runtime for the NVIDIA backend" ON)
@@ -486,9 +487,13 @@ if(TRITON_BUILD_PYTHON_MODULE)
                   ${CMAKE_CURRENT_SOURCE_DIR}/python/triton/experimental/gsan/src/gsan_profile.cc
                   ${PYTHON_SRC_PATH}/linear_layout.cc
                   ${PYTHON_SRC_PATH}/passes.cc
-                  ${PYTHON_SRC_PATH}/interpreter.cc
                   ${PYTHON_SRC_PATH}/llvm.cc
                   ${PYTHON_SRC_PATH}/specialize.cc)
+
+  if(TRITON_BUILD_INTERPRETER)
+    target_sources(triton PRIVATE ${PYTHON_SRC_PATH}/interpreter.cc)
+    target_compile_definitions(triton PRIVATE TRITON_HAS_INTERPRETER=1)
+  endif()
 
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_compile_options(triton PRIVATE -Wno-array-bounds)
