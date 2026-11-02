@@ -106,7 +106,12 @@ jobs:
 
           # The trimmed branch supports Python 3.14 only.
           export CIBW_BUILD="cp314-manylinux_${{ matrix.config.arch }}"
-          export CIBW_ENVIRONMENT="MAX_JOBS=4 TRITON_EXT_ENABLED=ON TRITON_BUILD_WITH_CLANG_LLD=1 TRITON_STABLE_ABI=ON"
+          export CIBW_ENVIRONMENT="MAX_JOBS=4 \
+                  TRITON_EXT_ENABLED=ON \
+                  TRITON_BUILD_WITH_CLANG_LLD=1 \
+                  TRITON_STABLE_ABI=ON \
+                  TRITON_BUILD_PROTON=OFF \
+                  TRITON_BUILD_NVIDIA_GSAN_RUNTIME=OFF"
           python3 -m cibuildwheel . --output-dir wheelhouse
 
       - uses: actions/upload-artifact@v7
