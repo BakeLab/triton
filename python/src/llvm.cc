@@ -25,8 +25,8 @@
 #include "llvm/IR/OptBisect.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/IR/Verifier.h"
-#include "llvm/InitializePasses.h"
 #include "llvm/IRReader/IRReader.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Linker/Linker.h"
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/Pass.h"
@@ -843,8 +843,8 @@ void init_triton_llvm(py::module_ &m) {
   m.def("init_targets", []() {
     static std::once_flag init_flag;
     std::call_once(init_flag, []() {
-      // Initialize only the GPU targets Triton emits code for. Initializing all
-      // targets would also require linking LLVM's host target libraries.
+    // Initialize only the GPU targets Triton emits code for. Initializing all
+    // targets would also require linking LLVM's host target libraries.
 #if TRITON_HAS_NVIDIA_BACKEND
       LLVMInitializeNVPTXTargetInfo();
       LLVMInitializeNVPTXTarget();

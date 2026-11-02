@@ -15,7 +15,6 @@ try:
     from triton._C.libtriton import nvidia as triton_nvidia
 except ImportError:
     triton_nvidia = None
-from triton._C.libtriton import passes as triton_passes
 from triton._C.libproton import proton as libproton
 from triton.compiler import LazyDict
 from triton._instrumentation import register_instrumentation, unregister_instrumentation

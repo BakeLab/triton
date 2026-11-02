@@ -710,8 +710,7 @@ struct PartitionLoops
   using TritonGPUPartitionLoopsBase::TritonGPUPartitionLoopsBase;
 
   void runOnOperation() override {
-    getOperation()->emitError(
-        "partition-loops requires the NVIDIA backend");
+    getOperation()->emitError("partition-loops requires the NVIDIA backend");
     signalPassFailure();
   }
 };
