@@ -37,7 +37,6 @@ def _find_frame_by_name(frame, name):
     return None
 
 
-# Remove _skip_cudagraph_test once the rocm version has been updated on CI nodes
 _skip_cudagraph_test = pytest.mark.skipif(
     os.environ.get("PROTON_SKIP_CUDAGRAPH_TEST", "0") == "1",
     reason="CUDAGraph test skipped due to environment constraints",

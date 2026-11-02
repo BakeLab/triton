@@ -69,7 +69,7 @@ def _get_path_to_hip_runtime_dylib():
 
     # In each location, prefer explicitly versioned names to pin the major
     # version.
-    lib_names = [f"{lib_name}.7", f"{lib_name}.6", lib_name]
+    lib_names = [f"{lib_name}.7", lib_name]
 
     paths = []
 
@@ -129,8 +129,8 @@ def _get_path_to_hip_runtime_dylib():
     # Afterwards try to search the loader dynamic library resolution paths.
     libs = subprocess.check_output(["/sbin/ldconfig", "-p"]).decode(errors="ignore")
     # each line looks like the following:
-    # libamdhip64.so.6 (libc6,x86-64) => /opt/rocm-6.0.2/lib/libamdhip64.so.6
-    # libamdhip64.so (libc6,x86-64) => /opt/rocm-6.0.2/lib/libamdhip64.so
+    # libamdhip64.so.7 (libc6,x86-64) => /opt/rocm/lib/libamdhip64.so.7
+    # libamdhip64.so (libc6,x86-64) => /opt/rocm/lib/libamdhip64.so
     for name in lib_names:
         locs = [line.split()[-1] for line in libs.splitlines() if line.strip().endswith("/" + name)]
         for loc in locs:
