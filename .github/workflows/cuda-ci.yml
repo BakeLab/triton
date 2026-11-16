@@ -43,7 +43,7 @@ jobs:
             "$image" bash -euo pipefail -c '
               /opt/conda/bin/conda create --yes --prefix /opt/gcc16 \
                 --override-channels --channel conda-forge \
-                gcc_linux-64=16.2.0 gxx_linux-64=16.2.0 sysroot_linux-64=2.28
+                gcc_linux-64=16.2.0 gxx_linux-64=16.2.0 sysroot_linux-64=2.28 zlib
               export CC=/opt/gcc16/bin/x86_64-conda-linux-gnu-gcc
               export CXX=/opt/gcc16/bin/x86_64-conda-linux-gnu-g++
               export LD_LIBRARY_PATH="/opt/gcc16/lib:${LD_LIBRARY_PATH:-}"
