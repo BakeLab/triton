@@ -18,7 +18,7 @@ on:
 jobs:
 
   release:
-    if: ${{ github.repository == 'triton-lang/triton' }}
+    if: ${{ github.server_url == 'https://github.com' && github.repository == 'triton-lang/triton' }}
     name: Create Release
     runs-on: ubuntu-latest
     permissions:
