@@ -12,6 +12,8 @@ permissions: read-all
 jobs:
 
   Build-Wheels:
+    # Azure nightly publication uses GitHub OIDC; Gitea runs cuda-ci.yml.
+    if: ${{ github.server_url == 'https://github.com' }}
     timeout-minutes: 180
     runs-on: ${{ matrix.config.runs_on }}
 
