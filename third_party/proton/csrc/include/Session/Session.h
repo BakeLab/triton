@@ -2,7 +2,7 @@
 #define PROTON_SESSION_SESSION_H_
 
 #include "Context/Context.h"
-#include "Data/Metric.h"
+#include "Data/Data.h"
 #include "Utility/Singleton.h"
 #include <algorithm>
 #include <map>
@@ -17,7 +17,6 @@
 namespace proton {
 
 class Profiler;
-class Data;
 
 /// A session is a collection of profiler, context source, and data objects.
 /// There could be multiple sessions in the system, each can correspond to a
